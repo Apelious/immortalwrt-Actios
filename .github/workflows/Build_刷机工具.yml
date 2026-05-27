@@ -80,10 +80,8 @@ jobs:
           CC: x86_64-w64-mingw32-gcc
         run: |
           LIBUSB_DIR="${{ github.workspace }}/libusb_win"
-          # 生成 manifest 资源文件（让 Windows 弹 UAC 管理员权限）
-          cat > app_manifest.rc << 'EOF'
-          1 24 "app.manifest"
-          EOF
+          # 写 rc 文件，注意不能有前导空格
+          printf '1 24 "app.manifest"\n' > app_manifest.rc
           x86_64-w64-mingw32-windres app_manifest.rc -O coff -o app_manifest.syso
           CGO_CFLAGS="-I${LIBUSB_DIR}/include/libusb-1.0" \
           CGO_LDFLAGS="-L${LIBUSB_DIR}/VS2019/MS64/static -lusb-1.0 -lsetupapi -static" \
@@ -102,9 +100,7 @@ jobs:
           CC: i686-w64-mingw32-gcc
         run: |
           LIBUSB_DIR="${{ github.workspace }}/libusb_win"
-          cat > app_manifest.rc << 'EOF'
-          1 24 "app.manifest"
-          EOF
+          printf '1 24 "app.manifest"\n' > app_manifest.rc
           i686-w64-mingw32-windres app_manifest.rc -O coff -o app_manifest.syso
           CGO_CFLAGS="-I${LIBUSB_DIR}/include/libusb-1.0" \
           CGO_LDFLAGS="-L${LIBUSB_DIR}/VS2019/MS32/static -lusb-1.0 -lsetupapi -static" \
