@@ -89,12 +89,13 @@ jobs:
         run: |
           LIBUSB_DIR="${{ github.workspace }}/libusb_win"
           INC=$(find "$LIBUSB_DIR" -name "libusb.h" | head -1 | xargs dirname)
+          # 直接指定 .a 文件路径，避免链接器选到 .dll.a
+          LIB="${LIBUSB_DIR}/MinGW64/static/libusb-1.0.a"
           echo "头文件: $INC"
-          echo "=== MinGW64 目录 ==="
-          find "$LIBUSB_DIR" -path "*MinGW64*" -name "*.a"
+          echo "静态库: $LIB"
           cp rsrc_amd64.syso rsrc.syso
           CGO_CFLAGS="-I${INC}" \
-          CGO_LDFLAGS="-L${LIBUSB_DIR}/MinGW64/static -lusb-1.0 -lsetupapi -static-libgcc" \
+          CGO_LDFLAGS="${LIB} -lsetupapi -static-libgcc" \
           go build \
             -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" \
             -trimpath \
@@ -111,10 +112,12 @@ jobs:
         run: |
           LIBUSB_DIR="${{ github.workspace }}/libusb_win"
           INC=$(find "$LIBUSB_DIR" -name "libusb.h" | head -1 | xargs dirname)
+          LIB="${LIBUSB_DIR}/MinGW32/static/libusb-1.0.a"
           echo "头文件: $INC"
+          echo "静态库: $LIB"
           cp rsrc_386.syso rsrc.syso
           CGO_CFLAGS="-I${INC}" \
-          CGO_LDFLAGS="-L${LIBUSB_DIR}/MinGW32/static -lusb-1.0 -lsetupapi -static-libgcc" \
+          CGO_LDFLAGS="${LIB} -lsetupapi -static-libgcc" \
           go build \
             -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" \
             -trimpath \
