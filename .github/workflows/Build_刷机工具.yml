@@ -87,18 +87,14 @@ jobs:
           CGO_ENABLED: 1
           CC: x86_64-w64-mingw32-gcc
         run: |
-          # 自动找 mingw 格式的 libusb 静态库
-          LIB=$(find "${{ github.workspace }}/libusb_win" -name "libusb-1.0.a" | grep -iE "mingw|gcc|64" | head -1)
-          # 如果没找到带 mingw 标记的，取第一个 64 位的
-          if [ -z "$LIB" ]; then
-            LIB=$(find "${{ github.workspace }}/libusb_win" -name "libusb-1.0.a" | head -1)
-          fi
-          INC=$(find "${{ github.workspace }}/libusb_win" -name "libusb.h" | head -1 | xargs dirname)
-          echo "使用库: $LIB"
+          LIBUSB_DIR="${{ github.workspace }}/libusb_win"
+          INC=$(find "$LIBUSB_DIR" -name "libusb.h" | head -1 | xargs dirname)
           echo "头文件: $INC"
+          echo "=== MinGW64 目录 ==="
+          find "$LIBUSB_DIR" -path "*MinGW64*" -name "*.a"
           cp rsrc_amd64.syso rsrc.syso
           CGO_CFLAGS="-I${INC}" \
-          CGO_LDFLAGS="-L$(dirname $LIB) -lusb-1.0 -lsetupapi -static-libgcc" \
+          CGO_LDFLAGS="-L${LIBUSB_DIR}/MinGW64/static -lusb-1.0 -lsetupapi -static-libgcc" \
           go build \
             -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" \
             -trimpath \
@@ -113,16 +109,12 @@ jobs:
           CGO_ENABLED: 1
           CC: i686-w64-mingw32-gcc
         run: |
-          LIB=$(find "${{ github.workspace }}/libusb_win" -name "libusb-1.0.a" | grep -iE "mingw|gcc|32" | head -1)
-          if [ -z "$LIB" ]; then
-            LIB=$(find "${{ github.workspace }}/libusb_win" -name "libusb-1.0.a" | tail -1)
-          fi
-          INC=$(find "${{ github.workspace }}/libusb_win" -name "libusb.h" | head -1 | xargs dirname)
-          echo "使用库: $LIB"
+          LIBUSB_DIR="${{ github.workspace }}/libusb_win"
+          INC=$(find "$LIBUSB_DIR" -name "libusb.h" | head -1 | xargs dirname)
           echo "头文件: $INC"
           cp rsrc_386.syso rsrc.syso
           CGO_CFLAGS="-I${INC}" \
-          CGO_LDFLAGS="-L$(dirname $LIB) -lusb-1.0 -lsetupapi -static-libgcc" \
+          CGO_LDFLAGS="-L${LIBUSB_DIR}/MinGW32/static -lusb-1.0 -lsetupapi -static-libgcc" \
           go build \
             -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" \
             -trimpath \
