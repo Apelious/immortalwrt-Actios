@@ -123,11 +123,23 @@ jobs:
 
       - name: 编译 Linux arm64
         working-directory: flashtool
+        continue-on-error: true
         env:
           GOOS: linux
           GOARCH: arm64
-          CGO_ENABLED: 0
+          CGO_ENABLED: 1
+          CC: aarch64-linux-gnu-gcc
         run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          sudo dpkg --add-architecture arm64
+          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list 2>/dev/null || true
+          sudo bash -c 'echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse" >> /etc/apt/sources.list'
+          sudo bash -c 'echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list'
+          sudo apt-get update -q
+          sudo apt-get install -y libusb-1.0-0-dev:arm64
+          PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig \
+          CGO_CFLAGS="$(pkg-config --cflags libusb-1.0 2>/dev/null || echo '-I/usr/include/libusb-1.0')" \
+          CGO_LDFLAGS="$(pkg-config --libs libusb-1.0 2>/dev/null || echo '-lusb-1.0')" \
           go build \
             -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" \
             -trimpath \
@@ -164,12 +176,16 @@ jobs:
           write_readme dist/linux_x64 "终端运行：./刷机工具"
           cd dist && tar -czf "OpenStick刷机工具_Linux_x64_${VERSION}.tar.gz" linux_x64/ && cd ..
 
-          # Linux arm64
-          mkdir -p dist/linux_arm64/rom
-          cp $ROM_DIR/*.bin $ROM_DIR/*.mbn $ROM_DIR/*.img dist/linux_arm64/rom/ 2>/dev/null || true
-          chmod +x dist/linux_arm64/刷机工具
-          write_readme dist/linux_arm64 "终端运行：./刷机工具"
-          cd dist && tar -czf "OpenStick刷机工具_Linux_arm64_${VERSION}.tar.gz" linux_arm64/ && cd ..
+          # Linux arm64（可能因交叉编译失败而不存在）
+          if [ -f dist/linux_arm64/刷机工具 ]; then
+            mkdir -p dist/linux_arm64/rom
+            cp $ROM_DIR/*.bin $ROM_DIR/*.mbn $ROM_DIR/*.img dist/linux_arm64/rom/ 2>/dev/null || true
+            chmod +x dist/linux_arm64/刷机工具
+            write_readme dist/linux_arm64 "终端运行：./刷机工具"
+            cd dist && tar -czf "OpenStick刷机工具_Linux_arm64_${VERSION}.tar.gz" linux_arm64/ && cd ..
+          else
+            echo "arm64 编译未成功，跳过打包"
+          fi
 
           echo "打包完成："
           ls -lh dist/*.zip dist/*.tar.gz
