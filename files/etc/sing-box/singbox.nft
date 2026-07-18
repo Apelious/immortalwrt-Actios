@@ -1,0 +1,34 @@
+define TPROXY_MARK=0x1
+define TPROXY_PORT=7892
+define TPROXY_L4PROTO={ tcp, udp }
+define INCLUDE_INTERFACE={ "br-lan"}
+
+define BYPASS_IPV4={
+    0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16,
+    172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/3
+}
+define BYPASS_IPV6={ ::/128, fd00::0/8, 2409:8a55::/32 }
+
+table inet singbox {
+  chain prerouting {
+    type filter hook prerouting priority mangle; policy accept;
+
+    iifname $INCLUDE_INTERFACE counter jump interface_filter
+
+    counter return
+  }
+
+  chain interface_filter {
+    # 这条规则不会对从外网到br-lan的回包生效，而是会对br-lan内的设备互相访问时的回包生效
+    ct direction != original counter return
+
+    meta l4proto $TPROXY_L4PROTO th dport 53 counter tproxy to :$TPROXY_PORT meta mark set $TPROXY_MARK accept
+
+    ip daddr $BYPASS_IPV4 counter return
+    ip6 daddr $BYPASS_IPV6 counter return
+
+    ip6 daddr != 2000::/3 counter return
+
+    meta l4proto $TPROXY_L4PROTO counter tproxy to :$TPROXY_PORT meta mark set $TPROXY_MARK accept
+  }
+}
