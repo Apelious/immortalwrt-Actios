@@ -10,9 +10,9 @@
 # sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 
 # 添加第三方 feed 源（small-package 包含 openclash/passwall/ssr-plus 等常用插件）
-echo 'src-git smpackage https://github.com/kenzok8/small-package' >> feeds.conf.default
+# echo 'src-git smpackage https://github.com/kenzok8/small-package' >> feeds.conf.default
 # 添加第三方源，iStore 应用商店，编译时包名输入 luci-app-store
-echo 'src-git store https://github.com/linkease/istore.git;main' >> feeds.conf.default
+# echo 'src-git store https://github.com/linkease/istore.git;main' >> feeds.conf.default
 
 
 # OpenClash代理
